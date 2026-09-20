@@ -1,0 +1,81 @@
+# kube-prometheus-values.yaml
+# Optimized for resource-constrained local Kind (Kubernetes-in-Docker) environments.
+# Prevents OOM kills while enabling full metrics scraping for AI Agent diagnostic workloads.
+
+prometheusOperator:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 100Mi
+
+prometheus:
+  enabled: true
+  prometheusSpec:
+    serviceAccountName: prometheus-k8s
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 1d
+    retentionSize: 2Gi
+    
+    # Storage configuration for local Kind execution without external PV dynamic provisioner dependency
+    storageSpec:
+      emptyDir:
+        medium: ""
+    
+    # Resource limits tailored for Kind local desktop environments to prevent OOM kills
+    resources:
+      limits:
+        cpu: 500m
+        memory: 768Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+    # Explicit service monitoring for cluster components
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+# Explicitly enable kube-state-metrics to expose pod status, restarts, limits & desired replicas
+kubeStateMetrics:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+# Explicitly enable node-exporter to harvest node-level CPU, memory, network & disk metrics
+nodeExporter:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 64Mi
+    requests:
+      cpu: 10m
+      memory: 16Mi
+
+prometheus-node-exporter:
+  enabled: true
+
+# Lightweight Grafana deployment for local observation
+grafana:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 100Mi
+
+# Disable memory-heavy components not strictly needed for agent telemetry
+alertmanager:
+  enabled: false
