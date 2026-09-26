@@ -51,7 +51,7 @@ class Evaluator:
         
         # Initial Alert Payload
         initial_state = {
-            "messages": [],
+            "messages": ["Diagnose the current cluster state and resolve any issues."],
             "observability_context": {"alert": f"Initial Prometheus alert payload for {scenario}"},
             "step_count": 0,
             "remediation_attempts": 0,
@@ -113,12 +113,12 @@ class Evaluator:
 if __name__ == "__main__":
     test_scenarios = [
         {
-            "name": "StressChaos_Memory_CartService",
+            "name": "StressChaos_CPU_CartService",
             "ground_truth": {
                 "localized_entity": "cartservice",
-                "fault_keyword": "memory",
+                "fault_keyword": "cpu",
                 "mock_predicted_entity": "cartservice",
-                "mock_predicted_fault": "High memory usage detected (StressChaos)"
+                "mock_predicted_fault": "High CPU usage detected (StressChaos)"
             }
         },
         {

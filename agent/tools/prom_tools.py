@@ -243,22 +243,47 @@ _default_prom_tool = PrometheusTool()
 _default_loki_tool = LokiLogTool()
 
 
-def query_promql(query: str) -> Dict[str, Any]:
+def get_pod_cpu_usage(pod_name: str) -> Dict[str, Any]:
     """
-    Executes a PromQL query against Prometheus.
-    
-    Embedded PromQL Templates:
-    - CPU Usage Rate: sum by (pod) (rate(container_cpu_usage_seconds_total[5m]))
-    - Memory Limit %: sum by (pod) (container_memory_working_set_bytes) / sum by (pod) (kube_pod_container_resource_limits{resource="memory"}) * 100
-    - P99 Latency: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
-    - Deployment Ratio: sum by (deployment) (kube_deployment_status_replicas_available) / sum by (deployment) (kube_deployment_status_replicas_desired)
+    Fetches the CPU usage rate for a specific pod. Pass the exact pod name.
     """
+    query = f'sum by (pod) (rate(container_cpu_usage_seconds_total{{pod="{pod_name}"}}[5m]))'
     return _default_prom_tool.execute_promql(query)
 
+
+def get_pod_memory_usage(pod_name: str) -> Dict[str, Any]:
+    """
+    Fetches the Memory utilization percentage for a specific pod. Pass the exact pod name.
+    """
+    query = (
+        f'sum by (pod) (container_memory_working_set_bytes{{pod="{pod_name}"}}) / '
+        f'sum by (pod) (kube_pod_container_resource_limits{{resource="memory", pod="{pod_name}"}}) * 100'
+    )
+    return _default_prom_tool.execute_promql(query)
+
+def get_service_p99_latency(service_name: str) -> Dict[str, Any]:
+    """
+    Fetches the 99th percentile request latency for a specific service. Pass the exact service name.
+    """
+    query = f'histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{{app="{service_name}"}}[5m])) by (le))'
+    return _default_prom_tool.execute_promql(query)
 
 def query_loki_logs(logql_query: str, limit: int = 50) -> str:
     """
     Queries Loki logs with mandatory runtime sanitization (stripping shell characters & prompt injection)
     and returning a maximum of 50 log lines as a single string.
+    
+    CRITICAL: Loki only accepts valid LogQL syntax starting with a label selector. You must use stream selectors like {app="cartservice"} or {namespace="default"}. Do NOT use Prometheus metric names or custom field selectors like type:Pod. To query pod resource limits, CPU, or memory metrics, you MUST use the get_pod_cpu_usage or get_pod_memory_usage tools instead.
     """
     return _default_loki_tool.query_logs(logql_query, limit=limit)
+
+
+
+
+
+
+
+
+
+# --- ADDED TO FIX IMPORT ERRORS IN GRAPH.PY ---
+prom_tools = [get_pod_cpu_usage, get_pod_memory_usage, get_service_p99_latency, query_loki_logs]
